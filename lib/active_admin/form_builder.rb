@@ -73,13 +73,23 @@ module ActiveAdmin
 
       content = with_new_form_buffer do
         template.content_tag :div, :class => "has_many #{association}" do
-          form_buffers.last << template.content_tag(:h3, object.class.reflect_on_association(association).klass.model_name.human(:count => 1.1))
+          
+          # If the class is wrapped via a decorator
+          # we need to ensure that we get the actual class,
+          # not just the decorated class.
+          if object.class.respond_to?(:model_class)
+            child = object.class.model_class.reflect_on_association(association)
+          else
+            child = object.class.reflect_on_association(association)
+          end
+          
+          form_buffers.last << template.content_tag(:h3, child.klass.model_name.human(:count => 1.1))
           inputs options, &form_block
 
           # Capture the ADD JS
-          placeholder = "NEW_#{object.class.reflect_on_association(association).klass.model_name.human.upcase}_RECORD"
+          placeholder = "NEW_#{child.klass.model_name.human.upcase}_RECORD"
           js = with_new_form_buffer do
-            inputs_for_nested_attributes  :for => [association, object.class.reflect_on_association(association).klass.new],
+            inputs_for_nested_attributes  :for => [association, child.klass.new],
                                           :class => "inputs has_many_fields",
                                           :for_options => {
                                             :child_index => placeholder
@@ -87,7 +97,7 @@ module ActiveAdmin
           end
 
           js = template.escape_javascript(js)
-          js = template.link_to I18n.t('active_admin.has_many_new', :model => object.class.reflect_on_association(association).klass.model_name.human), "#", :onclick => "$(this).before('#{js}'.replace(/#{placeholder}/g, new Date().getTime())); return false;", :class => "button"
+          js = template.link_to I18n.t('active_admin.has_many_new', :model => child.klass.model_name.human), "#", :onclick => "$(this).before('#{js}'.replace(/#{placeholder}/g, new Date().getTime())); return false;", :class => "button"
 
           form_buffers.last << js.html_safe
         end
