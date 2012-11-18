@@ -342,6 +342,23 @@ describe ActiveAdmin::FormBuilder do
         Capybara.string(body).should have_css(".has_many > fieldset > ol > li > a", :class => "button", :href => "#", :content => "Add New Post")
       end
     end
+    
+    describe "decorated with draper" do
+      
+      let :body do
+        build_form({:url => '/categories'}, CategoryDecorator.new(Category.new)) do |f|
+          f.object.posts.build
+          f.has_many :posts do |p,i|
+            p.input :title, :label => "Title #{i}"
+          end
+        end
+      end
+      
+      it "should render the nested form" do
+        body.should have_tag("input", :attributes => {:name => "category[posts_attributes][0][title]"})
+      end
+      
+    end
 
     describe "with complex block" do
       let :body do
